@@ -10,7 +10,7 @@
   --dark-grey: #0f0f0f;
   --off-white: #f2f2f2;
   --mid-grey: #7d7d7d;
-  --accent: #fa4c14;
+  --accent: #fa2814;
 
   --bg: var(--black);
   --fg: var(--off-white);
@@ -276,19 +276,6 @@ body.menu-open { overflow: hidden; }
   border-top: 1px solid var(--line);
   padding-top: 16px;
 }
-.plates { display: flex; gap: 8px; align-items: center; }
-.plates-label { margin-right: 8px; }
-.plate {
-  width: 14px;
-  height: 14px;
-  border: 1px solid var(--line-strong);
-}
-.plate[data-accent="#FA4C14"] { background: #fa4c14; }
-.plate[data-accent="#EC39B6"] { background: #ec39b6; }
-.plate[data-accent="#5014FA"] { background: #5014fa; }
-.plate[data-accent="#F2F2F2"] { background: #f2f2f2; }
-.plate.active { outline: 1px solid var(--fg); outline-offset: 2px; }
-
 /* ============================================================
    HERO — screen one
    ============================================================ */
@@ -770,7 +757,13 @@ body.menu-open { overflow: hidden; }
    ============================================================ */
 
 @media (max-width: 900px) {
-  :root { --cols: 8; }
+  /* A 16px gutter on a 390px screen reads as cramped, and the list rows ran
+     together once every panel spanned the full width. */
+  :root { --cols: 8; --margin: 22px; }
+
+  .skills-list { gap: var(--space-m); }
+  .skills-list li { gap: 6px; }
+  .contact-routes a { padding: var(--space-s) 0; }
 
   .lede,
   .about-grid > .lede,
@@ -792,6 +785,35 @@ body.menu-open { overflow: hidden; }
 
   .contact { align-content: end; justify-items: stretch; }
   .contact-panel { width: 100%; }
+
+  /* On a phone each panel spans the whole frame instead of tucking into a
+     corner, so the text-shadow alone stops carrying the type — over the
+     flower and the van it was white on white. Same edgeless pool the
+     Ditherfilm panel already used, but linear: these panels are far taller
+     than they are wide, and a closest-side radial sizes off the short edge
+     and never reaches the last lines. Held wider than the panel so the only
+     visible edges are the soft ones, top and bottom. */
+  .skills-panel,
+  .contact-panel,
+  .library-panel {
+    position: relative;
+    isolation: isolate;
+  }
+  .skills-panel::before,
+  .contact-panel::before,
+  .library-panel::before {
+    content: "";
+    position: absolute;
+    inset: -4% -30%;
+    z-index: -1;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.88) 7%,
+      rgba(0, 0, 0, 0.88) 93%,
+      rgba(0, 0, 0, 0) 100%
+    );
+  }
 
   .case-stats { grid-template-columns: 1fr; }
   .case-stats dd { padding-right: 0; }

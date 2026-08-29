@@ -1,27 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ACCENTS, NAV, SKILLS, VINKURA_CASES } from "@/lib/content";
+import { NAV, SKILLS, VINKURA_CASES } from "@/lib/content";
+import { greet } from "@/lib/console-egg";
 import { DitherStage } from "./DitherStage";
 import { Mark } from "./Mark";
 import { Scramble } from "./Scramble";
-
-const ACCENT_KEY = "sashakt-accent";
-const ACCENT_EVENT = "sashakt-accent";
-const DEFAULT_ACCENT = "#FA4C14";
-
-function subscribeAccent(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  window.addEventListener(ACCENT_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onChange);
-    window.removeEventListener(ACCENT_EVENT, onChange);
-  };
-}
-
-function getAccent() {
-  return localStorage.getItem(ACCENT_KEY) || DEFAULT_ACCENT;
-}
 
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -31,7 +15,6 @@ function subscribeReducedMotion(onChange: () => void) {
 
 export function Portfolio() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const accent = useSyncExternalStore(subscribeAccent, getAccent, () => DEFAULT_ACCENT);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -41,14 +24,7 @@ export function Portfolio() {
   const [loaded, setLoaded] = useState(false);
   const progressRef = useRef<HTMLSpanElement>(null);
 
-  const setAccent = (value: string) => {
-    localStorage.setItem(ACCENT_KEY, value);
-    window.dispatchEvent(new Event(ACCENT_EVENT));
-  };
-
-  useEffect(() => {
-    document.documentElement.style.setProperty("--accent", accent);
-  }, [accent]);
+  useEffect(greet, []);
 
   useEffect(() => {
     document.body.classList.toggle("menu-open", menuOpen);
@@ -182,19 +158,6 @@ export function Portfolio() {
           ))}
         </div>
         <div className="nav-foot">
-          <div className="plates">
-            <span className="plates-label label">Key plate</span>
-            {ACCENTS.map((plate) => (
-              <button
-                key={plate.value}
-                className={`plate${accent === plate.value ? " active" : ""}`}
-                data-accent={plate.value}
-                aria-label={plate.label}
-                type="button"
-                onClick={() => setAccent(plate.value)}
-              />
-            ))}
-          </div>
           <div className="nav-copy label">© Sashakt 2026</div>
         </div>
       </nav>
@@ -414,10 +377,7 @@ export function Portfolio() {
             <div className="foot-col">
               <h5>Connect</h5>
               <a href="mailto:contact@techfrien.com">Email</a>
-              <a href="https://x.com/sashakt" target="_blank" rel="noopener noreferrer">
-                X
-              </a>
-              <a href="https://github.com/sashakt" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/sashxkt" target="_blank" rel="noopener noreferrer">
                 GitHub
               </a>
             </div>

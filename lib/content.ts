@@ -6,13 +6,6 @@ export const NAV = [
   { href: "#contact", n: "04", label: "Contact", hint: "Reach" },
 ] as const;
 
-export const ACCENTS = [
-  { value: "#FA4C14", label: "Orange" },
-  { value: "#EC39B6", label: "Pink" },
-  { value: "#5014FA", label: "Blue" },
-  { value: "#F2F2F2", label: "Grey" },
-] as const;
-
 // Field records from vinkura.in/case-studies. Figures are the ones
 // stated on those pages. Keep them in step with the source.
 export const VINKURA_CASES = [

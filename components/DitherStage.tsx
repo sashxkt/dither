@@ -36,16 +36,26 @@ const LOOK = {
     letterCut: 0.83,
     grain: 0,
     color: false,
+    minSpan: 0,
   },
+  // A logo, not a scene: it has to be whole or it is nothing. On a portrait
+  // phone cover samples the middle quarter of the frame and slices both arms
+  // off the mark. minSpan holds at least 40% of the source width in shot and
+  // letterboxes rather than cropping past it — full contain was worse, it
+  // fits the whole 16:9 frame into a tall screen and leaves the mark tiny.
+  // cell 8 rather than 16 because the canvas is displayed at cols x dot size
+  // either way — at 16 it rendered 2880px wide into a 1440px box and threw
+  // three of every four pixels away, taking the Bayer pattern with them.
   techfrien: {
     cols: 180,
-    cell: 16,
+    cell: 8,
     black: 0.1,
     gain: 1,
     contrast: 0.54,
     letterCut: 1.01,
     grain: 0,
     color: false,
+    minSpan: 0.4,
   },
   // The colour looks. Dots take their hue from the frame, so the grid
   // stays coarse enough for each dot to read as a colour, and the tone
@@ -60,6 +70,7 @@ const LOOK = {
     letterCut: 1.01,
     grain: 0,
     color: true,
+    minSpan: 0,
   },
   // A bright, busy frame needs the opposite treatment to the flower: lift
   // the black point and pull the gain back, or every cell lights and the
@@ -73,6 +84,7 @@ const LOOK = {
     letterCut: 1.01,
     grain: 0,
     color: true,
+    minSpan: 0,
   },
   contact: {
     cols: COLOR_COLS,
@@ -83,8 +95,16 @@ const LOOK = {
     letterCut: 1.01,
     grain: 0,
     color: true,
+    minSpan: 0,
   },
 };
+
+// Smallest a dot is allowed to get, in CSS px. Holding the desktop dot size
+// (~8.5px) all the way down put only 46 dots across a 390px phone, which is
+// too few for the clip to read as anything — it went soft and blocky. Letting
+// the dot halve on a phone roughly doubles the detail and still lands well
+// above the point where the grid stops looking like a grid.
+const MIN_DOT = 4.5;
 
 // Which window owns the mid-view line, or null if we are between windows.
 // Returning null rather than guessing is the point: the caller holds the
@@ -154,6 +174,7 @@ export function DitherStage() {
     let H = 0;
     let cols = 0;
     let rows = 0;
+    let cellPx = 0;
     let lum = new Float32Array(0);
     let colR = new Float32Array(0);
     let colG = new Float32Array(0);
@@ -185,7 +206,7 @@ export function DitherStage() {
     const atlasCache = new Map<number, { atlas: typeof atlas; cov: typeof atlasCov }>();
 
     const buildAtlas = () => {
-      const cell = state.cell;
+      const cell = cellPx;
       atlasCount = CHARSET.length;
       const cached = atlasCache.get(cell);
       if (cached) {
@@ -221,9 +242,20 @@ export function DitherStage() {
     };
 
     const resize = () => {
-      const cell = state.cell;
-      cols = state.cols;
-      const aspect = window.innerHeight / Math.max(1, window.innerWidth);
+      const vw = Math.max(1, window.innerWidth);
+      // Each look's cols was tuned against REF_W. Holding cols fixed as the
+      // viewport narrows shrank every dot with it: on a 390px phone the grid
+      // ran at ~2 display px per cell, so the dither aliased into noise while
+      // the canvas still cost twice the pixels the screen could show. cols now
+      // follows the viewport, floored at MIN_DOT so a phone keeps enough dots
+      // to read, and capped at the tuned value so desktop is exactly as it was.
+      cols = Math.max(24, Math.min(state.cols, Math.round(vw / MIN_DOT)));
+      // And the cell follows cols, so the canvas lands near 1:1 with the
+      // viewport. Wider than that and we pay for pixels the screen throws
+      // away point-sampling back down — which is what cost techfrien 4x.
+      const cell = Math.max(3, Math.min(state.cell, Math.floor(vw / cols)));
+      cellPx = cell;
+      const aspect = window.innerHeight / vw;
       rows = Math.max(4, Math.round(cols * aspect));
       W = cols * cell;
       H = rows * cell;
@@ -377,8 +409,18 @@ export function DitherStage() {
           const hy = oy + dy * tHit;
           let u = (hx + 1) * 0.5 + mx * 0.018;
           let v = (hy + 1) * 0.5 + my * 0.012;
-          if (ca > va) v = (v - 0.5) * (va / ca) + 0.5;
-          else u = (u - 0.5) * (ca / va) + 0.5;
+          // Cover, expressed as the fraction of the source each axis keeps,
+          // so a zoom ceiling can be applied to both at once and the aspect
+          // survives it. minSpan 0 is plain cover.
+          let wu = ca > va ? 1 : ca / va;
+          let wv = ca > va ? va / ca : 1;
+          if (wu < state.minSpan) {
+            const g = state.minSpan / wu;
+            wu *= g;
+            wv *= g;
+          }
+          u = (u - 0.5) * wu + 0.5;
+          v = (v - 0.5) * wv + 0.5;
           const ci = y * cols + x;
           const lit = state.color ? sampleRGB(u, v) : sampleLum(u, v);
           if (state.color) {
@@ -549,7 +591,7 @@ export function DitherStage() {
         cellChar[i] = lum[i] >= cut ? k++ % atlasCount : -1;
       }
 
-      const cell = state.cell;
+      const cell = cellPx;
       const glyphArea = cell * cell;
       const grain = state.grain;
       const color = state.color;

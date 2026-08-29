@@ -1,0 +1,813 @@
+/* ============================================================
+   TOKENS
+   Two faces: DM Sans carries everything with words in it, mono
+   carries labels. Every rule composes from the scale below — no
+   rule invents its own size, weight or tracking.
+   ============================================================ */
+
+:root {
+  --black: #000000;
+  --dark-grey: #0f0f0f;
+  --off-white: #f2f2f2;
+  --mid-grey: #7d7d7d;
+  --accent: #fa4c14;
+
+  --bg: var(--black);
+  --fg: var(--off-white);
+  --muted: var(--mid-grey);
+
+  /* Two hairline weights. Nothing else draws a line. */
+  --line: rgba(242, 242, 242, 0.08);
+  --line-strong: rgba(242, 242, 242, 0.14);
+
+  /* 16 columns, 8px gutter, small page margin. */
+  --cols: 16;
+  --gap: 8px;
+  --margin: clamp(16px, 1.8vw, 28px);
+
+  /* Vertical rhythm. Four steps, nothing in between. */
+  --space-s: 12px;
+  --space-m: clamp(24px, 3vw, 40px);
+  --space-l: clamp(48px, 7vw, 96px);
+  --space-xl: clamp(88px, 14vh, 176px);
+
+  --sans: var(--font-sans), Helvetica, Arial, sans-serif;
+  --mono: var(--font-mono), ui-monospace, monospace;
+
+  --ease: cubic-bezier(0.19, 1, 0.22, 1);
+
+  /* ---- TYPE SCALE ----------------------------------------
+     Seven roles. Two tracking families: the sans runs tight and
+     negative and gets tighter as it gets bigger; mono labels are
+     the one positive tracking on the site. Use as:
+       font: var(--t-h2); letter-spacing: var(--t-h2-ls);
+     -------------------------------------------------------- */
+
+  --t-display:    300 clamp(64px, 13vw, 200px)/0.94 var(--sans);
+  --t-display-ls: -0.045em;
+
+  --t-h1:         300 clamp(44px, 5.6vw, 84px)/1 var(--sans);
+  --t-h1-ls:      -0.035em;
+
+  --t-h2:         400 clamp(30px, 3.4vw, 44px)/1.05 var(--sans);
+  --t-h2-ls:      -0.03em;
+
+  --t-h3:         400 clamp(20px, 2vw, 28px)/1.15 var(--sans);
+  --t-h3-ls:      -0.02em;
+
+  --t-lede:       300 clamp(19px, 1.9vw, 26px)/1.35 var(--sans);
+  --t-lede-ls:    -0.02em;
+
+  --t-body:       400 16px/1.6 var(--sans);
+  --t-body-ls:    -0.01em;
+
+  /* Dense or secondary text: list rows, stats, footer links. */
+  --t-ui:         400 14px/1.5 var(--sans);
+  --t-ui-ls:      -0.01em;
+
+  /* Every kicker, tag, eyebrow, counter and caption on the site.
+     One size, one colour, one tracking. */
+  --t-label:      400 10px/1 var(--mono);
+  --t-label-ls:   0.04em;
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 0;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: var(--t-body);
+  letter-spacing: var(--t-body-ls);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+::selection { background: var(--accent); color: var(--black); }
+:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+body.menu-open { overflow: hidden; }
+
+.label {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lede {
+  font: var(--t-lede);
+  letter-spacing: var(--t-lede-ls);
+  text-wrap: pretty;
+}
+.body {
+  font: var(--t-body);
+  letter-spacing: var(--t-body-ls);
+  color: var(--fg);
+  text-wrap: pretty;
+}
+.body + .body { margin-top: 1em; }
+.body.muted { color: var(--muted); }
+
+/* ============================================================
+   THE SIX SCREENS
+   The dither is a fixed layer that shows through exactly six full-
+   viewport windows — Sashakt, Vinkura, Techfrien, Skills, Contact,
+   Ditherfilm.
+   Every other block is opaque black and simply covers it, so the video
+   is out of the frame rather than dimmed inside it.
+   ============================================================ */
+
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--black);
+  overflow: hidden;
+  transition: opacity 0.45s var(--ease);
+}
+/* Nothing on screen is a window — stop painting the frame at all. */
+:root[data-stage="off"] #bg { opacity: 0; }
+
+#bg video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+#bg canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  /* Held back until the first real video frame decodes, so the window
+     opens on black and fades to the clip rather than flashing. */
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
+}
+#bg canvas.live { opacity: 1; }
+
+.page { position: relative; z-index: 1; }
+
+/* A window onto the dither: one viewport, edge to edge, nothing
+   painted over it. The two case stages hold no type at all. */
+.stage {
+  min-height: 100svh;
+  background: transparent;
+}
+
+/* Everything else is solid ground. */
+.section,
+.case-detail,
+.site-footer { background: var(--black); }
+
+/* ============================================================
+   HEADER + NAV
+   ============================================================ */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px var(--margin);
+  pointer-events: none;
+}
+.site-header > * { pointer-events: auto; }
+/* Copy scrolls under the fixed header, so it needs something to land
+   on. A fade, not a bar — nothing new gets drawn. */
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -36px 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, var(--black) 58%, transparent 100%);
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease);
+}
+/* Nothing scrolls under the header on the hero, so the fade has no job
+   there — and it was the one thing dimming the top of the opening frame. */
+:root[data-hero="1"] .site-header::before { opacity: 0; }
+
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 20px; height: 20px; display: block; }
+.mark-ticks { fill: var(--accent); }
+
+.brand-word,
+.menu-btn,
+.nav-close {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+}
+.brand-word { color: var(--fg); }
+.menu-btn,
+.nav-close {
+  color: var(--muted);
+  padding: 6px 0;
+  transition: color 0.3s var(--ease);
+}
+.menu-btn:hover,
+.nav-close:hover { color: var(--fg); }
+
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--black);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 18px var(--margin) 24px;
+  transform: translateY(-101%);
+  transition: transform 0.7s var(--ease);
+}
+.nav-overlay.open { transform: translateY(0); }
+.nav-top { display: flex; justify-content: space-between; align-items: center; }
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+}
+.nav-list a {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-m);
+  padding: 4px 0;
+  font: var(--t-h1);
+  letter-spacing: var(--t-h1-ls);
+  color: var(--fg);
+  transition: color 0.3s var(--ease);
+}
+.nav-list a .n,
+.nav-list a .hint {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.nav-list a:hover { color: var(--accent); }
+
+.nav-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.plates { display: flex; gap: 8px; align-items: center; }
+.plates-label { margin-right: 8px; }
+.plate {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--line-strong);
+}
+.plate[data-accent="#FA4C14"] { background: #fa4c14; }
+.plate[data-accent="#EC39B6"] { background: #ec39b6; }
+.plate[data-accent="#5014FA"] { background: #5014fa; }
+.plate[data-accent="#F2F2F2"] { background: #f2f2f2; }
+.plate.active { outline: 1px solid var(--fg); outline-offset: 2px; }
+
+/* ============================================================
+   HERO — screen one
+   ============================================================ */
+
+.hero {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-m);
+  padding: var(--space-l) var(--margin);
+}
+.hero-caption {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 0 22px rgba(0, 0, 0, 0.8);
+}
+.hero-title {
+  font: var(--t-display);
+  letter-spacing: var(--t-display-ls);
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  /* The frame is live and some of it lands bright. A halo on the
+     glyphs holds the word without dimming anything behind it. */
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.6), 0 0 32px rgba(0, 0, 0, 0.85);
+}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+
+.section {
+  position: relative;
+  padding: var(--space-xl) var(--margin);
+}
+.section-inner {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: var(--space-l);
+}
+.section-inner > * { grid-column: 1 / -1; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-m);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-s);
+}
+.sec-num {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  color: var(--muted);
+}
+.sec-title {
+  font: var(--t-h2);
+  letter-spacing: var(--t-h2-ls);
+}
+
+.lede { grid-column: 1 / span 9; }
+
+.about-grid {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  row-gap: var(--space-m);
+}
+.about-grid > .lede { grid-column: 1 / span 8; }
+.about-grid > .ethos { grid-column: 11 / span 5; }
+
+.kicker,
+.tag {
+  display: block;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--space-s);
+}
+
+/* ============================================================
+   CASE STUDIES
+   A silent full-screen window, then the whole story on black.
+   The name is only ever set over solid ground, so it is readable
+   and the video never has type dropped on top of it.
+   ============================================================ */
+
+.case-detail { padding: var(--space-l) var(--margin) var(--space-xl); }
+.case-detail-inner {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: var(--space-m);
+}
+
+.case-head {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-m);
+}
+.case-head .tag { margin-bottom: var(--space-s); }
+.case-title {
+  font: var(--t-h1);
+  letter-spacing: var(--t-h1-ls);
+}
+
+.case-detail .lede { grid-column: 1 / span 6; }
+.case-prose {
+  grid-column: 8 / span 9;
+  display: flex;
+  flex-direction: column;
+}
+.case-prose .body { max-width: 58ch; }
+.case-detail .go { grid-column: 1 / -1; }
+
+.case-stats {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-s);
+}
+.case-stats dt {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.case-stats dd {
+  margin-top: var(--space-s);
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  color: var(--fg);
+  padding-right: var(--space-m);
+}
+
+/* Field records. Each row is a real case study on vinkura.in, so the
+   whole row is the link and the figure it reports is the payoff. */
+.case-links {
+  grid-column: 1 / -1;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.case-links a {
+  display: grid;
+  grid-template-columns: 3fr 2fr 6fr auto;
+  column-gap: var(--gap);
+  align-items: baseline;
+  padding: var(--space-s) 0;
+  border-bottom: 1px solid var(--line);
+  transition: color 0.3s var(--ease);
+}
+.case-links a:hover { color: var(--accent); }
+.case-link-name {
+  font: var(--t-h3);
+  letter-spacing: var(--t-h3-ls);
+}
+.case-link-where,
+.case-link-figure {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.case-links a:hover .case-link-where,
+.case-links a:hover .case-link-figure { color: var(--accent); }
+.case-link-figure { text-align: right; }
+.case-link-note {
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  color: var(--muted);
+}
+
+/* One link style everywhere: a label with a rule under it. */
+.go {
+  width: fit-content;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--fg);
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 4px;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.go:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ============================================================
+   SKILLS — the colour window
+   A full-screen frame with the pitch held in the top-right corner,
+   so the middle of the shot stays clear. Type over live colour, so
+   every line carries a halo rather than a panel behind it.
+   ============================================================ */
+
+.skills {
+  display: grid;
+  align-content: start;
+  justify-items: end;
+  padding: calc(var(--space-xl) + 24px) var(--margin) var(--space-l);
+}
+.skills-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-s);
+  width: min(46ch, 100%);
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7);
+}
+.skills-panel .sec-num { color: var(--fg); }
+.skills-title {
+  font: var(--t-h2);
+  letter-spacing: var(--t-h2-ls);
+  text-wrap: balance;
+}
+.skills-note {
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  color: var(--fg);
+  max-width: 42ch;
+}
+.skills-list {
+  list-style: none;
+  display: grid;
+  gap: var(--space-s);
+  width: 100%;
+  margin-top: var(--space-s);
+  border-top: 1px solid var(--line-strong);
+  padding-top: var(--space-m);
+}
+.skills-list li { display: grid; gap: 2px; }
+.skills-list strong {
+  font: var(--t-h3);
+  letter-spacing: var(--t-h3-ls);
+  font-weight: 400;
+}
+.skills-list span {
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  /* Full strength, not muted: this panel sits over a live colour frame,
+     so hierarchy comes from size and the grey would drop out. */
+  color: var(--fg);
+}
+.skills-panel .go {
+  margin-top: var(--space-s);
+  text-shadow: none;
+}
+
+/* ============================================================
+   CONTACT — the reaching window
+   The clip brings a hand in from the top right, so the panel is
+   anchored bottom-left and capped narrow: the diagonal between the
+   two is the composition, and nothing crowds the gesture.
+   ============================================================ */
+
+.contact {
+  display: grid;
+  align-content: end;
+  justify-items: start;
+  padding: var(--space-xl) var(--margin) var(--space-l);
+}
+.contact-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-s);
+  width: min(44ch, 100%);
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7);
+}
+.contact-panel .sec-num { color: var(--fg); }
+.contact-title {
+  font: var(--t-h1);
+  letter-spacing: var(--t-h1-ls);
+}
+.contact-note {
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  color: var(--fg);
+  max-width: 40ch;
+}
+.contact-routes {
+  list-style: none;
+  width: 100%;
+  margin-top: var(--space-s);
+  border-top: 1px solid var(--line-strong);
+}
+.contact-routes a {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--space-s) 0;
+  border-bottom: 1px solid var(--line);
+  transition: color 0.3s var(--ease);
+}
+.contact-routes a:hover { color: var(--accent); }
+.contact-for {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--fg);
+}
+/* The address is the payload, so it gets the larger of the two. */
+.contact-mail {
+  font: var(--t-h3);
+  letter-spacing: var(--t-h3-ls);
+  overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   LIBRARY — the closing window
+   Anchored to the foot of the frame, not centred: the middle of this
+   clip is the best of the picture, and the village along the bottom is
+   dark enough to read on with barely any help.
+   ============================================================ */
+
+.library {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  padding: var(--space-xl) var(--margin) var(--space-l);
+  text-align: center;
+}
+.library-panel {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-s);
+  max-width: 56ch;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7);
+}
+/* A light pool of ground, edgeless. Over the dark foot of the frame the
+   copy needs far less than the centred layout did over the bright sky. */
+.library-panel::before {
+  content: "";
+  position: absolute;
+  inset: -12% -20%;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    rgba(0, 0, 0, 0.82),
+    rgba(0, 0, 0, 0.6) 60%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+}
+.library-eyebrow {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.library-title {
+  font: var(--t-h1);
+  letter-spacing: var(--t-h1-ls);
+}
+.library-note {
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  color: var(--fg);
+  max-width: 52ch;
+}
+/* A chip, not a scrim: carries its own ground so the command reads
+   whatever the frame is doing, and covers a few hundred pixels. */
+.library-cmd {
+  margin-top: var(--space-s);
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  color: var(--fg);
+  background: rgba(0, 0, 0, 0.78);
+  border: 1px solid var(--line-strong);
+  padding: 11px 15px;
+  text-shadow: none;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.site-footer {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-l) var(--margin) var(--space-m);
+  border-top: 1px solid var(--line-strong);
+}
+.foot-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--space-m) var(--gap);
+}
+.foot-col { grid-column: span 4; }
+.foot-col h5 {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--space-s);
+}
+.foot-col a,
+.foot-col p {
+  display: block;
+  font: var(--t-ui);
+  letter-spacing: var(--t-ui-ls);
+  line-height: 1.9;
+  color: var(--fg);
+  transition: color 0.3s var(--ease);
+}
+.foot-col p { color: var(--muted); line-height: 1.5; }
+.foot-col a:hover { color: var(--accent); }
+.foot-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+  margin-top: var(--space-l);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-s);
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ============================================================
+   HUD
+   ============================================================ */
+
+.hud-right {
+  position: fixed;
+  bottom: 18px;
+  right: var(--margin);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  /* Fixed chrome over scrolling content: carry a ground so it never
+     collides with a row that happens to sit at the bottom edge. */
+  background: var(--black);
+  padding: 6px 0 6px 12px;
+}
+.hud-right span {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--black);
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding: var(--margin);
+  transition: opacity 0.6s var(--ease), visibility 0.6s var(--ease);
+}
+.loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader b,
+.loader span {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-ls);
+  text-transform: uppercase;
+}
+.loader b { color: var(--fg); }
+.loader span { color: var(--muted); }
+
+/* ============================================================
+   RESPONSIVE
+   Below 900px the grid collapses to 8 columns and every
+   multi-column block becomes a single stack.
+   ============================================================ */
+
+@media (max-width: 900px) {
+  :root { --cols: 8; }
+
+  .lede,
+  .about-grid > .lede,
+  .about-grid > .ethos,
+  .case-detail .lede,
+  .case-prose,
+  .foot-col {
+    grid-column: 1 / -1;
+  }
+
+  /* The corner panel becomes the whole column on a phone, and the
+     section grows past one viewport rather than overflowing it. */
+  .skills {
+    justify-items: stretch;
+    align-content: start;
+    padding-bottom: var(--space-xl);
+  }
+  .skills-panel { width: 100%; }
+
+  .contact { align-content: end; justify-items: stretch; }
+  .contact-panel { width: 100%; }
+
+  .case-stats { grid-template-columns: 1fr; }
+  .case-stats dd { padding-right: 0; }
+  .case-stats > div { border-bottom: 1px solid var(--line); padding-bottom: var(--space-s); }
+
+  .case-links a {
+    grid-template-columns: 1fr auto;
+    row-gap: 6px;
+    padding: var(--space-m) 0;
+  }
+  .case-link-note { grid-column: 1 / -1; }
+
+  .hud-right { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
